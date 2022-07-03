@@ -135,6 +135,10 @@ class LogInWithGoogleFailure implements Exception {
         return const LogInWithGoogleFailure(
           'The credential verification ID received is invalid.',
         );
+      case 'sign_in_canceled':
+        return const LogInWithGoogleFailure(
+          'The sign in flow is canceled.',
+        );
       default:
         return const LogInWithGoogleFailure();
     }
@@ -215,11 +219,15 @@ class AuthenticationRepository {
         credential = userCredential.credential!;
       } else {
         final googleUser = await _googleSignIn.signIn();
-        final googleAuth = await googleUser!.authentication;
-        credential = firebase_auth.GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
+        if (googleUser != null) {
+          final googleAuth = await googleUser.authentication;
+          credential = firebase_auth.GoogleAuthProvider.credential(
+            accessToken: googleAuth.accessToken,
+            idToken: googleAuth.idToken,
+          );
+        } else {
+          throw FirebaseAuthException(code: 'sign_in_canceled');
+        }
       }
 
       await _firebaseAuth.signInWithCredential(credential);
